@@ -476,6 +476,12 @@ router.post(
 
     ChannelfindById(channelId)
       .then((channel) => {
+        if (!channel.users.includes(req.user.id)) {
+          return res
+            .status(401)
+            .json({ errors: [{ msg: "Unauthorized Access" }] });
+        }
+
         // Channel => History
         const newMessage = {
           message,
