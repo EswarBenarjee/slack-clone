@@ -465,11 +465,51 @@ router.delete("/admin/:channelId/:userId", (req, res) => {
 // @access  PRIVATE
 router.post(
   "/message/:channelId",
-  [check("message", "Message is required").not().isEmpty()],
+  [
+    check("message", "Message is required").not().isEmpty(),
+    check("avatar", "Avatar is required").not().isEmpty(),
+  ],
   (req, res) => {
     const { channelId } = req.params;
 
-    
+    const { message, type, name, avatar } = req.body;
+
+    ChannelfindById(channelId)
+      .then((channel) => {
+        if (!channel.users.includes(req.user.id)) {
+          return res
+            .status(401)
+            .json({ errors: [{ msg: "Unauthorized Access" }] });
+        }
+
+        // Channel => History
+        const newMessage = {
+          message,
+          user: req.user.id,
+          name,
+          avatar,
+        };
+
+        if (type) newMessage.type = type;
+
+        channel.history.unshift(newMessage);
+
+        channel
+          .save()
+          .then((savedChannel) => {
+            return res.json({ channel: savedChannel });
+          })
+          .catch((err) => {
+            return res.status(500).json({
+              errors: [{ msg: "Internal Server Error" }],
+            });
+          });
+      })
+      .catch((err) => {
+        return res.status(500).json({
+          errors: [{ msg: "Internal Server Error" }],
+        });
+      });
   }
 );
 
