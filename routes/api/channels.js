@@ -30,7 +30,7 @@ router.get("/:id", (req, res) => {
 // @desc    Create Channel
 // @access  PRIVATE
 router.post(
-  "/channel",
+  "/",
   [
     check("name", "Channel name is required").not().isEmpty(),
     check("logo", "Logo is required").not().isEmpty(),
@@ -119,13 +119,13 @@ router.put("/:id", (req, res) => {
 // route    DELETE /api/channels/:id
 // @desc    Delete Channel
 // @access  PRIVATE
-router.put("/:id", async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const id = req.params.id;
 
   // Check workspace and remove the current Channel from Workspace
   Channel.findById(id)
     .then((channel) => {
-      if (!channel.admins.includes(id)) {
+      if (!channel.admins.includes(req.user.id)) {
         return res
           .status(401)
           .json({ errors: [{ msg: "Unauthorized access" }] });
@@ -136,7 +136,7 @@ router.put("/:id", async (req, res) => {
       Workspace.findById(workspace)
         .then((workspace) => {
           workspace.channels = workspace.channels.filter((channel) => {
-            return channel !== id;
+            return channel.toLocaleString() !== id.toLocaleString();
           });
 
           workspace
@@ -433,7 +433,7 @@ router.delete("/admin/:channelId/:userId", (req, res) => {
       }
 
       channel.admins = channel.admins.filter((id) => {
-        return id !== userId;
+        return id.toLocaleString() !== userId.toLocaleString();
       });
 
       if (channel.admins.length === 0) {
@@ -470,6 +470,11 @@ router.post(
     check("avatar", "Avatar is required").not().isEmpty(),
   ],
   (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { channelId } = req.params;
 
     const { message, type, name, avatar } = req.body;
@@ -493,6 +498,55 @@ router.post(
         if (type) newMessage.type = type;
 
         channel.history.unshift(newMessage);
+
+        channel
+          .save()
+          .then((savedChannel) => {
+            return res.json({ channel: savedChannel });
+          })
+          .catch((err) => {
+            return res.status(500).json({
+              errors: [{ msg: "Internal Server Error" }],
+            });
+          });
+      })
+      .catch((err) => {
+        return res.status(500).json({
+          errors: [{ msg: "Internal Server Error" }],
+        });
+      });
+  }
+);
+
+// route    PUT /api/channels/message/:channelId/:messageId/
+// @desc    Update Message
+// @access  PRIVATE
+router.put(
+  "/message/:channelId/:messageId",
+  [check("message", "Message is required").not().isEmpty()],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { channelId, messageId } = req.params;
+    const { message } = req.body;
+
+    Channel.findById(channelId)
+      .then((channel) => {
+        if (!channel.users.includes(req.user.id)) {
+          return res
+            .status(401)
+            .json({ errors: [{ msg: "Unauthorized Access" }] });
+        }
+
+        channel.history = channel.history.map((msg) => {
+          if (msg.user === req.user.id && msg._id === messageId) {
+            msg.message = message;
+          }
+          return msg;
+        });
 
         channel
           .save()
