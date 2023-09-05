@@ -24,18 +24,16 @@ router.post("/", (req, res) => {
     fetch(config.get("EMAILJS_URL"), {
       method: "POST",
       headers: {
-        contentType: "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
     })
-      .then((res) => res.json())
+      .then((response) => response)
       .then((data) => {
-        return res
-          .status(400)
-          .json({ success: true, message: "MAIL sent successfully" });
+        return res.json({ success: true, message: "Mail sent successfully" });
       })
       .catch((err) => {
-        return res.status(400).json({ success: false, message: err.message });
+        return res.json({ success: false, message: err.message });
       });
   } else {
     const { title, usermail, inviteLink, prodLink } = req.body;
@@ -59,18 +57,16 @@ router.post("/", (req, res) => {
     fetch(config.get("EMAILJS_URL"), {
       method: "POST",
       headers: {
-        contentType: "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
     })
-      .then((res) => res.json())
+      .then((response) => response)
       .then((data) => {
-        return res
-          .status(400)
-          .json({ success: true, message: "MAIL sent successfully" });
+        return res.json({ success: true, message: "Mail sent successfully" });
       })
       .catch((err) => {
-        return res.status(400).json({ success: false, message: err.message });
+        return res.json({ success: false, message: err.message });
       });
   }
 });
