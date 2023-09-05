@@ -56,20 +56,26 @@ router.post(
     newChannel
       .save()
       .then((savedChannel) => {
-        Workspace.findById(workspace).then((workspace) => {
-          workspace.channels.unshift(savedChannel._id);
+        Workspace.findById(workspace)
+          .then((workspace) => {
+            workspace.channels.unshift(savedChannel._id);
 
-          workspace
-            .save()
-            .then((savedWorkspace) => {
-              return res.json({ channel: savedChannel });
-            })
-            .catch((err) => {
-              return res
-                .status(500)
-                .json({ errors: [{ msg: "Internal Server Error" }] });
-            });
-        });
+            workspace
+              .save()
+              .then((savedWorkspace) => {
+                return res.json({ channel: savedChannel });
+              })
+              .catch((err) => {
+                return res
+                  .status(500)
+                  .json({ errors: [{ msg: "Internal Server Error" }] });
+              });
+          })
+          .catch((err) => {
+            return res
+              .status(500)
+              .json({ errors: [{ msg: "Internal Server Error" }] });
+          });
       })
       .catch((err) => {
         return res
@@ -280,12 +286,14 @@ router.post("/add/:channelId/:userId", (req, res) => {
       // Check if the user is in workspace and channel or not
       Workspace.findById(channel.workspace)
         .then((workspace) => {
-          if (
-            !workspace.users.includes(userId) ||
-            !channel.users.includes(userId)
-          ) {
+          if (!workspace.users.includes(userId)) {
             return res.status(404).json({
-              errors: [{ msg: "User not found in Channel" }],
+              errors: [{ msg: "User not found in Workspace" }],
+            });
+          }
+          if (channel.users.includes(userId)) {
+            return res.status(404).json({
+              errors: [{ msg: "User is already in Channel" }],
             });
           }
 
