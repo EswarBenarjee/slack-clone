@@ -200,6 +200,18 @@ router.delete("/:id/:user", (req, res) => {
               );
             });
 
+            if (channel.users.length === 0) {
+              Channel.findOneAndDelete(id)
+                .then(() => {
+                  return res.json({ channel: {} });
+                })
+                .catch((err) => {
+                  return res
+                    .status(500)
+                    .json({ errors: [{ msg: "Internal Server Error" }] });
+                });
+            }
+
             channel
               .save()
               .then((savedChannel) => {
