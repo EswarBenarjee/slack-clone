@@ -201,9 +201,21 @@ router.delete("/:id/:user", (req, res) => {
             });
 
             if (channel.users.length === 0) {
-              Channel.findOneAndDelete(id)
-                .then(() => {
-                  return res.json({ channel: {} });
+              Workspace.findById(channel.workspace)
+                .then((workspace) => {
+                  workspace.channels = workspace.channels.filter((cid) => {
+                    return cid.toLocaleString() !== id.toLocaleString();
+                  });
+
+                  Channel.findOneAndDelete(id)
+                    .then(() => {
+                      return res.json({ channel: {} });
+                    })
+                    .catch((err) => {
+                      return res
+                        .status(500)
+                        .json({ errors: [{ msg: "Internal Server Error" }] });
+                    });
                 })
                 .catch((err) => {
                   return res
