@@ -7,6 +7,9 @@ const User = require("../../models/User");
 const Channel = require("../../models/Channel");
 const Workspace = require("../../models/Workspace");
 
+const jwt = require("jsonwebtoken");
+const config = require("config");
+
 const channelInvite = require("../../middleware/channel-invite");
 
 // route    /api/channels/:id
@@ -188,6 +191,12 @@ router.delete("/:id/:user", (req, res) => {
 
   Channel.findById(id)
     .then((channel) => {
+      if (!channel.users.includes(user)) {
+        return res
+          .status(404)
+          .json({ errors: [{ msg: "User not found in channel" }] });
+      }
+
       // Check if remover and user are same or current user is admin or not
       if (req.user.id === user || !channel.admins.includes(user)) {
         User.findById(user)
@@ -196,13 +205,13 @@ router.delete("/:id/:user", (req, res) => {
             channel.users = channel.users.filter((currentUserId) => {
               return (
                 currentUserId.toLocaleString() !==
-                savedUser._id.toLocaleString()
+                userFetched._id.toLocaleString()
               );
             });
             channel.admins = channel.admins.filter((currentUserId) => {
               return (
                 currentUserId.toLocaleString() !==
-                savedUser._id.toLocaleString()
+                userFetched._id.toLocaleString()
               );
             });
 
@@ -332,7 +341,7 @@ router.get("/invite/:id", (req, res) => {
 
   Channel.findById(id)
     .then((channel) => {
-      if (!channel.admins.includes(id, req.user.id)) {
+      if (!channel.admins.includes(req.user.id)) {
         return res
           .status(401)
           .json({ errors: [{ err: "Unauthorized Access" }] });
@@ -417,13 +426,14 @@ router.post("/admin/:channelId/:userId", (req, res) => {
           errors: [{ msg: "Already an Admin" }],
         });
       }
-
-      if (
-        !channel.admins.includes(req.user.id) ||
-        !channel.users.includes(userId)
-      ) {
+      if (!channel.admins.includes(req.user.id)) {
         return res.status(401).json({
           errors: [{ msg: "Unauthorized Access" }],
+        });
+      }
+      if (!channel.users.includes(userId)) {
+        return res.status(404).json({
+          errors: [{ msg: "User not found in Channel" }],
         });
       }
 
@@ -512,7 +522,7 @@ router.post(
 
     const { message, type, name, avatar } = req.body;
 
-    ChannelfindById(channelId)
+    Channel.findById(channelId)
       .then((channel) => {
         if (!channel.users.includes(req.user.id)) {
           return res
@@ -551,8 +561,8 @@ router.post(
   }
 );
 
-// route    PUT /api/channels/message/:channelId/:messageId/
-// @desc    Update Message
+// route    PUT /api/channels/message/:channelId/:messageId
+// @desc    Edit Message
 // @access  PRIVATE
 router.put(
   "/message/:channelId/:messageId",
@@ -575,7 +585,10 @@ router.put(
         }
 
         channel.history = channel.history.map((msg) => {
-          if (msg.user === req.user.id && msg._id === messageId) {
+          if (
+            msg.user.toLocaleString() === req.user.id.toLocaleString() &&
+            msg._id.toLocaleString() === messageId.toLocaleString()
+          ) {
             msg.message = message;
           }
           return msg;
@@ -599,5 +612,24 @@ router.put(
       });
   }
 );
+
+// route    DELETE /api/channels/message/:channelId/:messageId
+// @desc    Delete Message
+// @access  Delete
+router.delete("/message/:channelId/:messageId", (req, res) => {
+  const { channelId, messageId } = req.params;
+
+  Channel.findById(channelId)
+    .then((channel) => {
+      channel.history = channel.history.filter(msg => {
+        
+      })
+    })
+    .catch((err) => {
+      return res.status(500).json({
+        errors: [{ msg: "Internal Server Error" }],
+      });
+    });
+});
 
 module.exports = router;

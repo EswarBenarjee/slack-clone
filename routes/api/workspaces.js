@@ -8,7 +8,6 @@ const Channel = require("../../models/Channel");
 const Workspace = require("../../models/Workspace");
 
 const jwt = require("jsonwebtoken");
-
 const config = require("config");
 
 const workspaceInvite = require("../../middleware/workspace-invite");
