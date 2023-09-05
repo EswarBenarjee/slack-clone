@@ -621,9 +621,27 @@ router.delete("/message/:channelId/:messageId", (req, res) => {
 
   Channel.findById(channelId)
     .then((channel) => {
-      channel.history = channel.history.filter(msg => {
-        
-      })
+      channel.history = channel.history.filter((msg) => {
+        if (
+          msg.user.toLocaleString() === req.user.id &&
+          msg._id.toLocaleString() === messageId
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+
+      channel
+        .save()
+        .then((savedChannel) => {
+          return res.json({ channel: savedChannel });
+        })
+        .catch((err) => {
+          return res.status(500).json({
+            errors: [{ msg: "Internal Server Error" }],
+          });
+        });
     })
     .catch((err) => {
       return res.status(500).json({
