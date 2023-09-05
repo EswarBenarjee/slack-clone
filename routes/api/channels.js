@@ -283,6 +283,12 @@ router.post("/add/:channelId/:userId", (req, res) => {
         });
       }
 
+      if (channel.users.includes(userId)) {
+        return res.status(404).json({
+          errors: [{ msg: "User already joined the Channel" }],
+        });
+      }
+
       // Check if the user is in workspace and channel or not
       Workspace.findById(channel.workspace)
         .then((workspace) => {
@@ -291,13 +297,8 @@ router.post("/add/:channelId/:userId", (req, res) => {
               errors: [{ msg: "User not found in Workspace" }],
             });
           }
-          if (channel.users.includes(userId)) {
-            return res.status(404).json({
-              errors: [{ msg: "User is already in Channel" }],
-            });
-          }
 
-          channel.unshift(userId);
+          channel.users.unshift(userId);
 
           channel
             .save()
