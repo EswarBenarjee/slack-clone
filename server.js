@@ -17,7 +17,6 @@ app.use("/api/users", require("./routes/api/users"));
 app.use("/api/channels", auth, require("./routes/api/channels"));
 app.use("/api/workspaces", auth, require("./routes/api/workspaces"));
 
-const sendMail = require("./routes/utils/mail");
 app.use("/api/mail", require("./routes/api/mail.js"));
 
 app.get("/", (req, res) => res.send("API running"));
