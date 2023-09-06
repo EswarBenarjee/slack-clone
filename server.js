@@ -1,9 +1,11 @@
 const express = require("express");
-
 const app = express();
 
 // DB connection
 require("./config/db");
+
+// Socketio
+const socketio = require("socket.io");
 
 // Init middleware
 app.use(express.json({ extended: false }));
@@ -23,4 +25,13 @@ app.get("/", (req, res) => res.send("API running"));
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, console.log("app started"));
+const expressServer = app.listen(PORT, console.log("app started"));
+const io = socketio(expressServer);
+
+// Send all workspaces of current user
+io.on("connection", auth, (socket) => {
+  let workspacesList = [];
+  socket.emit("workspacesList", workspacesList);
+});
+
+// Send all channels with current user of current workspace
